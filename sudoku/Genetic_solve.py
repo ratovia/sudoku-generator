@@ -12,15 +12,19 @@ GENOM_MUTATION = 0.08
 MAX_GENERATION = 1000
 
 class Genetic_solve(Solve.Solve):
+    def __init__(self,_table):
+        self.question = np.array(_table)
+        self.answer = np.copy(self.question)
+        self.result = False
+        self.solve(np.copy( self.question))
+
     def create_genom(self,_table):
         return Sudoku_genom.Sudoku_genom(_table,0)
 
 
     def evaluation(self,genom):
-        """評価関数です。今回は全ての遺伝子が1となれば最適解となるので、
-        合計して遺伝子と同じ長さの数となった場合を1として0.00~1.00で評価します
-        :param ga: 評価を行うgenomClass
-        :return: 評価処理をしたgenomClassを返す
+        """
+        評価関数
         """
         evaluation_list = genom.createEvaluationList(genom.getGenom())
         genom_total = sum(evaluation_list)
@@ -28,10 +32,8 @@ class Genetic_solve(Solve.Solve):
 
 
     def select(self,genoms, elite):
-        """選択関数です。エリート選択を行います
-        評価が高い順番にソートを行った後、一定以上
-        :param ga: 選択を行うgenomClassの配列
-        :return: 選択処理をした一定のエリート、genomClassを返す
+        """
+        選択関数
         """
         sort_result = sorted(genoms, reverse=True, key=lambda u: u.evaluation)
         result = [sort_result.pop(0) for i in range(elite)]
@@ -39,12 +41,13 @@ class Genetic_solve(Solve.Solve):
 
 
     def crossover(self,_table,genom_A, genom_B):
-        """交叉関数です。
+        """
+        交叉関数
         2つのSudoku_genom子孫を作成し、リスト返す
         オリジナルの空きマスには
         ・エリートA
         ・エリートB
-        のいずれかを継承して入る
+        のいずれかが継承して入る
         """
         zero_position = self.get_zero_position(_table)
         genom_list = []
@@ -63,12 +66,13 @@ class Genetic_solve(Solve.Solve):
         return genom_list
 
     def crossover2(self,_table,genom_A, genom_B):
-        """交叉関数です。
+        """
+        交叉関数です。
         3つのSudoku_genom子孫を作成し、リスト返す
         オリジナルの空きマスには
         ・エリートA
         ・エリートB
-        のいずれかを継承して入る
+        のいずれかを列ごと、行ごと、ブロックごとに継承して入る
         """
         genom_list = []
         progeny_one = np.copy(_table)
@@ -90,7 +94,6 @@ class Genetic_solve(Solve.Solve):
                 table = genom_B.getGenom().T
                 progeny_second[i] = table[i]
                 progeny_second = progeny_second.T
-
         for i in range(0,3):
             for j in range(0,3):
                 if genom_A.EvaluationBlock()[i*3 + j] > genom_B.EvaluationBlock()[i*3 + j]:
@@ -108,11 +111,8 @@ class Genetic_solve(Solve.Solve):
         return genom_list
 
     def next_generation_gene_create(self,ga, ga_elite, ga_progeny):
-        """世代交代処理を行います
-        :param ga: 現行世代個体集団
-        :param ga_elite: 現行世代エリート集団
-        :param ga_progeny: 現行世代子孫集団
-        :return: 次世代個体集団
+        """
+        世代交代
         """
         next_genoms = sorted(ga, reverse=False, key=lambda u: u.evaluation)
         for i in range(0, len(ga_elite) + len(ga_progeny)):
@@ -123,9 +123,10 @@ class Genetic_solve(Solve.Solve):
 
 
     def mutation(self,_table,genoms, induvidual_mutation, genom_mutation):
-        """突然変異関数です。
-        :param ga: genomClass
-        :return: 突然変異処理をしたgenomClassを返す"""
+        """
+        突然変異
+        数独のランダムの場所が突然変異する。
+        """
         genom_list = []
         for genom in genoms:
             if induvidual_mutation > (random.randint(0, 100) / Decimal(100)):
@@ -138,6 +139,28 @@ class Genetic_solve(Solve.Solve):
                     table = genom.getGenom()
                     table[target_position[0]][target_position[1]] = random.randint(1, 9)
                     genom.setGenom(table)
+            genom_list.append(genom)
+        return genom_list
+
+    def mutation2(self,_table,genoms, induvidual_mutation, genom_mutation):
+        """
+        突然変異
+        get_zero_position(_table)
+        によって入ることができる値の範囲で突然変異する。
+        """
+        genom_list = []
+        for genom in genoms:
+            if induvidual_mutation > (random.randint(0, 100) / Decimal(100)):
+                genom.setGenom(self.set_random(_table))
+            if genom_mutation > (random.randint(0, 100) / Decimal(100)):
+                zero_position = self.get_zero_position(_table)
+                random_position = random.sample(zero_position, len(zero_position))
+                while len(random_position) > 0:
+                    target_position = random_position.pop(0)
+                    table = genom.getGenom()
+                    table[target_position[0]][target_position[1]] = 0
+                    genom.setGenom(table)
+                genom.setGenom(self.set_random(genom.getGenom()))
             genom_list.append(genom)
         return genom_list
 
@@ -155,29 +178,26 @@ class Genetic_solve(Solve.Solve):
             for i in range(0, SELECT_GENOM):
                 progeny_gene.extend(self.crossover2(table, elite_genes[i - 1], elite_genes[i]))
             next_genoms = self.next_generation_gene_create(current_genoms,elite_genes, progeny_gene)
-            next_genoms = self.mutation(_table,next_genoms,INDIVIDUAL_MUTATION,GENOM_MUTATION)
+            next_genoms = self.mutation2(_table,next_genoms,INDIVIDUAL_MUTATION,GENOM_MUTATION)
             fits = [j.getEvaluation() for j in current_genoms]
             min_ = min(fits)
             max_ = max(fits)
             avg_ = sum(fits) / Decimal(len(fits))
-            # print ("-----第{}世代の結果-----".format(count_))
-            # print ("  Min:{}".format(min_))
+            print ("-----第{}世代の結果-----".format(count_))
+            print ("  Min:{}".format(min_))
             print ("  Max:{}".format(max_))
-            # print ("  Avg:{}".format(avg_))
-            print (elite_genes[0].display(elite_genes[0].getGenom()))
-            # print (current_genoms)
+            print ("  Avg:{}".format(avg_))
+            display_genes = self.select(current_genoms,1)
+            # print (display_genes[0].display(display_genes[0].getGenom()))　# debug
             if max_ == 1:
-                print ("-----第{}世代で学習完了しました-----".format(count_))
+                print ("######第{}世代で学習完了しました#####".format(count_))
                 elite_genes = self.select(current_genoms,1)
+                # print ("最も優れた個体は") # debug
+                # print (elite_genes[0].display(elite_genes[0].getGenom())) # debug
+                table = np.copy(elite_genes[0].getGenom())
+                self.result = True
                 break
             else:
                 current_genoms = next_genoms
-
-        
-        print ("最も優れた個体は")
-        print (elite_genes[0].display(elite_genes[0].getGenom()))
-        if not self.get_zero_position(table):
-            self.result = True
-        else:
-            self.result = False    
+                self.result = False    
         self.answer = np.copy(elite_genes[0].getGenom())

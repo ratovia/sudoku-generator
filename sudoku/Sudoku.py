@@ -21,7 +21,7 @@ class Sudoku():
     SHUFFLE_ROWS  = 7
     SHUFFLE_COLS  = 8
     SHUFFLE_NUM   = 9
-    BLANK_NUM = 50
+    BLANK_NUM = 45
 
     def __init__(self):
         self.table = []

@@ -30,19 +30,7 @@ class Solve(Sudoku.Sudoku):
         loop_count = 0
         while len(zero_position) > 0 and len(zero_position) >= loop_count:
             target_position = zero_position.pop(0)
-            uninsertable = np.concatenate(
-                (
-                    self.get_uninsertable_by_row(table,target_position),
-                    self.get_uninsertable_by_column(table,target_position),
-                    self.get_uninsertable_by_block(table,target_position),
-                ),
-                axis=None
-            )
-            uninsertable = np.unique(uninsertable)
-            insertable = []
-            for i in range(1,10,1):
-                if not i in uninsertable:
-                    insertable.append(i)
+            insertable = self.insertable(table,target_position)
             if len(insertable) == 1:
                 table[target_position[0]][target_position[1]] = insertable[0]
                 loop_count = 0
@@ -101,21 +89,26 @@ class Solve(Sudoku.Sudoku):
         zero_position = self.get_zero_position(table)
         while len(zero_position) > 0:
             target_position = zero_position.pop(0)
-            uninsertable = np.concatenate(
-                (
-                    self.get_uninsertable_by_row(table,target_position),
-                    self.get_uninsertable_by_column(table,target_position),
-                    self.get_uninsertable_by_block(table,target_position),
-                ),
-                axis=None
-            )
-            uninsertable = np.unique(uninsertable)
-            insertable = []
-            for i in range(1,10,1):
-                if not i in uninsertable:
-                    insertable.append(i)
+            insertable = self.insertable(table,target_position)
             if len(insertable) > 0:
                 table[target_position[0]][target_position[1]] = random.choice(insertable)
             else:
                 table[target_position[0]][target_position[1]] = random.randint(1, 9)
         return np.copy(table)
+
+
+    def insertable(self,table,pos):
+        uninsertable = np.concatenate(
+            (
+                self.get_uninsertable_by_row(table,pos),
+                self.get_uninsertable_by_column(table,pos),
+                self.get_uninsertable_by_block(table,pos),
+            ),
+            axis=None
+        )
+        uninsertable = np.unique(uninsertable)
+        insertable = []
+        for i in range(1,10,1):
+            if not i in uninsertable:
+                insertable.append(i)
+        return insertable
