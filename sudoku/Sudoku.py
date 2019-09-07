@@ -1,4 +1,4 @@
-from enum import Enum
+# -*- coding: utf-8 -*-
 import numpy as np
 import random
 """
@@ -12,7 +12,6 @@ import random
 
 """     
 class Sudoku():
-    # 定数
     SHUFFLE_ABC   = 1
     SHUFFLE_DEF   = 2
     SHUFFLE_GHI   = 3
@@ -22,7 +21,7 @@ class Sudoku():
     SHUFFLE_ROWS  = 7
     SHUFFLE_COLS  = 8
     SHUFFLE_NUM   = 9
-    BLANK_NUM = 30
+    BLANK_NUM = 45
 
     def __init__(self):
         self.table = []
@@ -64,8 +63,6 @@ class Sudoku():
 
     def set_question(self,_table):
         self.table = self.set_blank(np.copy(_table))
-        # TODO 解けるか確認する
-        # TODO 解けるまで繰り返す
         self.question = self.table
 
     def get_answer(self):
